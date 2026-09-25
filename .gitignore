@@ -1,0 +1,8 @@
+.cache/
+.venv/
+__pycache__/
+*.pyc
+*.kubeconfig
+.env
+*.secret.yaml
+
