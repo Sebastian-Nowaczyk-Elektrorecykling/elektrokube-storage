@@ -1,0 +1,44 @@
+# Kubernetes >= 1.36: stable, native CEL mutation, without a webhook service.
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingAdmissionPolicy
+metadata:
+  name: cnpg-default-storage-class
+spec:
+  failurePolicy: Fail
+  reinvocationPolicy: IfNeeded
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [postgresql.cnpg.io]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [clusters]
+        scope: Namespaced
+  mutations:
+    - patchType: JSONPatch
+      jsonPatch:
+        # A PVC template is also an explicit class choice. Empty strings mean
+        # no dynamic provisioning, so preserve them just like a named class.
+        expression: >-
+          has(object.spec.storage) &&
+          !has(object.spec.storage.storageClass) &&
+          (!has(object.spec.storage.pvcTemplate) ||
+           !has(object.spec.storage.pvcTemplate.storageClassName))
+          ? [JSONPatch{op: "add", path: "/spec/storage/storageClass", value: "longhorn-cnpg"}]
+          : []
+    - patchType: JSONPatch
+      jsonPatch:
+        # Default a separately requested WAL volume, without creating one.
+        expression: >-
+          has(object.spec.walStorage) &&
+          !has(object.spec.walStorage.storageClass) &&
+          (!has(object.spec.walStorage.pvcTemplate) ||
+           !has(object.spec.walStorage.pvcTemplate.storageClassName))
+          ? [JSONPatch{op: "add", path: "/spec/walStorage/storageClass", value: "longhorn-cnpg"}]
+          : []
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingAdmissionPolicyBinding
+metadata:
+  name: cnpg-default-storage-class
+spec:
+  policyName: cnpg-default-storage-class

@@ -1,0 +1,58 @@
+name: Validate
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  manifests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - name: Install Python dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Install pinned validation tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .cache/bin
+          cd .cache/bin
+          curl -fsSL --retry 3 https://get.helm.sh/helm-v3.19.0-linux-amd64.tar.gz -o helm.tgz
+          echo 'a7f81ce08007091b86d8bd696eb4d86b8d0f2e1b9f6c714be62f82f96a594496  helm.tgz' | sha256sum -c -
+          tar -xzf helm.tgz --strip-components=1 linux-amd64/helm
+          curl -fsSL --retry 3 https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.7.1/kustomize_v5.7.1_linux_amd64.tar.gz -o kustomize.tgz
+          echo 'ea375e7372f9aa029129d4b2d16c66b7750b7f1213c4f66f910d981c895818d8  kustomize.tgz' | sha256sum -c -
+          tar -xzf kustomize.tgz kustomize
+          curl -fsSL --retry 3 https://github.com/yannh/kubeconform/releases/download/v0.7.0/kubeconform-linux-amd64.tar.gz -o kubeconform.tgz
+          echo 'c31518ddd122663b3f3aa874cfe8178cb0988de944f29c74a0b9260920d115d3  kubeconform.tgz' | sha256sum -c -
+          tar -xzf kubeconform.tgz kubeconform
+          echo "$PWD" >> "$GITHUB_PATH"
+      - name: Render and validate
+        run: python3 scripts/validate.py
+      - name: Install pinned kind and kubectl
+        run: |
+          set -euo pipefail
+          cd .cache/bin
+          curl -fsSL --retry 3 https://github.com/kubernetes-sigs/kind/releases/download/v0.33.0/kind-linux-amd64 -o kind
+          curl -fsSL --retry 3 https://github.com/kubernetes-sigs/kind/releases/download/v0.33.0/kind-linux-amd64.sha256sum -o kind.sha256sum
+          sed 's/kind-linux-amd64/kind/' kind.sha256sum | sha256sum -c -
+          curl -fsSL --retry 3 https://dl.k8s.io/release/v1.36.4/bin/linux/amd64/kubectl -o kubectl
+          curl -fsSL --retry 3 https://dl.k8s.io/release/v1.36.4/bin/linux/amd64/kubectl.sha256 -o kubectl.sha256
+          echo "$(cat kubectl.sha256)  kubectl" | sha256sum -c -
+          chmod +x kind kubectl
+      - name: Exercise native CNPG admission policy
+        run: |
+          kind create cluster --name storage-policy --wait 120s \
+            --image kindest/node:v1.36.4@sha256:099e049362a1526b2db71494e1947aae99bd16290d7c895f2b7ea312e3cbfaed
+          python3 scripts/test-policy.py
+      - name: Delete disposable policy cluster
+        if: always()
+        run: if command -v kind >/dev/null; then kind delete cluster --name storage-policy; fi

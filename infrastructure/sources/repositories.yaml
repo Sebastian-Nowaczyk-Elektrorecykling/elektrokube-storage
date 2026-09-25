@@ -1,0 +1,36 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: storage-longhorn
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://charts.longhorn.io
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: storage-cnpg
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://cloudnative-pg.github.io/charts
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: storage-garage-chart
+  namespace: flux-system
+spec:
+  interval: 1h
+  timeout: 120s
+  # Official read-only GitHub mirror; the upstream chart is shipped in Git.
+  url: https://github.com/deuxfleurs-org/garage.git
+  ref:
+    # v2.4.1 / chart 0.10.2
+    commit: 268334bd2530fa99f8b06c7383b2e9f776691edd
+  ignore: |
+    /*
+    !/script/
+    /script/*
+    !/script/helm/

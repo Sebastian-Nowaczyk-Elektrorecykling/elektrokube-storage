@@ -1,0 +1,50 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: longhorn
+  namespace: longhorn-system
+spec:
+  releaseName: longhorn
+  interval: 10m
+  timeout: 20m
+  chart:
+    spec:
+      chart: longhorn
+      version: 1.12.1
+      sourceRef:
+        kind: HelmRepository
+        name: storage-longhorn
+        namespace: flux-system
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  driftDetection:
+    mode: enabled
+  values:
+    persistence:
+      # Flux owns all four classes; prevent the driver from creating another one.
+      createStorageClass: false
+    csi:
+      kubeletRootDir: /var/lib/kubelet
+    defaultSettings:
+      defaultDataPath: /var/lib/longhorn
+      defaultReplicaCount: 1
+      v1DataEngine: true
+      v2DataEngine: false
+      replicaSoftAntiAffinity: false
+      # A three-replica volume must initially fit on three distinct nodes.
+      allowVolumeCreationWithDegradedAvailability: false
+    defaultBackupStore:
+      backupTarget: ""
+      backupTargetCredentialSecret: ""
+    ingress:
+      enabled: false
+    service:
+      ui:
+        type: ClusterIP
+

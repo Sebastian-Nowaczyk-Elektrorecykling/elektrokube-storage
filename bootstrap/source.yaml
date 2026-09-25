@@ -1,0 +1,12 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: elektrokube-storage
+  namespace: flux-system
+spec:
+  interval: 1m
+  timeout: 60s
+  url: https://github.com/Sebastian-Nowaczyk-Elektrorecykling/elektrokube-storage.git
+  ref:
+    branch: main
+

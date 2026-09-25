@@ -1,0 +1,149 @@
+# cilium is a read-only dependency owned by elektrokube-cilium-and-flux.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: storage-namespaces
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/part-of: elektrokube-storage
+spec:
+  interval: 5m
+  retryInterval: 1m
+  timeout: 25m
+  path: ./infrastructure/namespaces
+  sourceRef:
+    kind: GitRepository
+    name: elektrokube-storage
+  prune: false
+  deletionPolicy: Orphan
+  wait: true
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: storage-sources
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/part-of: elektrokube-storage
+spec:
+  interval: 5m
+  retryInterval: 1m
+  timeout: 25m
+  path: ./infrastructure/sources
+  sourceRef:
+    kind: GitRepository
+    name: elektrokube-storage
+  prune: true
+  deletionPolicy: Orphan
+  wait: true
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: storage-longhorn
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/part-of: elektrokube-storage
+spec:
+  interval: 5m
+  retryInterval: 1m
+  timeout: 25m
+  path: ./infrastructure/longhorn
+  sourceRef:
+    kind: GitRepository
+    name: elektrokube-storage
+  prune: false
+  deletionPolicy: Orphan
+  wait: true
+  dependsOn:
+  - name: storage-namespaces
+  - name: storage-sources
+  - name: cilium
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: storage-classes
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/part-of: elektrokube-storage
+spec:
+  interval: 5m
+  retryInterval: 1m
+  timeout: 25m
+  path: ./infrastructure/storage-classes
+  sourceRef:
+    kind: GitRepository
+    name: elektrokube-storage
+  prune: false
+  deletionPolicy: Orphan
+  wait: true
+  dependsOn:
+  - name: storage-longhorn
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: storage-cnpg
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/part-of: elektrokube-storage
+spec:
+  interval: 5m
+  retryInterval: 1m
+  timeout: 25m
+  path: ./infrastructure/cnpg
+  sourceRef:
+    kind: GitRepository
+    name: elektrokube-storage
+  prune: false
+  deletionPolicy: Orphan
+  wait: true
+  dependsOn:
+  - name: storage-namespaces
+  - name: storage-sources
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: storage-garage
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/part-of: elektrokube-storage
+spec:
+  interval: 5m
+  retryInterval: 1m
+  timeout: 25m
+  path: ./infrastructure/garage
+  sourceRef:
+    kind: GitRepository
+    name: elektrokube-storage
+  prune: false
+  deletionPolicy: Orphan
+  wait: true
+  dependsOn:
+  - name: storage-classes
+  - name: storage-namespaces
+  - name: storage-sources
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: storage-cnpg-policy
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/part-of: elektrokube-storage
+spec:
+  interval: 5m
+  retryInterval: 1m
+  timeout: 5m
+  path: ./infrastructure/cnpg-policy
+  sourceRef:
+    kind: GitRepository
+    name: elektrokube-storage
+  prune: true
+  deletionPolicy: Orphan
+  wait: true
+  dependsOn:
+    - name: storage-cnpg
+    - name: storage-classes

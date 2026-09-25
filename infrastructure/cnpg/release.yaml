@@ -1,0 +1,38 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cloudnative-pg
+  namespace: cnpg-system
+spec:
+  releaseName: cloudnative-pg
+  interval: 10m
+  timeout: 10m
+  chart:
+    spec:
+      chart: cloudnative-pg
+      version: 0.29.0
+      sourceRef:
+        kind: HelmRepository
+        name: storage-cnpg
+        namespace: flux-system
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  driftDetection:
+    mode: enabled
+  values:
+    fullnameOverride: cnpg-controller-manager
+    replicaCount: 1
+    crds:
+      create: true
+    config:
+      clusterWide: true
+      # Native admission policy supplies the default StorageClass.
+    monitoring:
+      podMonitorEnabled: false
+

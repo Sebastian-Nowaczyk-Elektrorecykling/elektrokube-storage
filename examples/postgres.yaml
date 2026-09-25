@@ -1,0 +1,14 @@
+# Optional example; this directory is outside every Flux reconciliation path.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: example
+  namespace: default
+spec:
+  instances: 1
+  storage:
+    # Admission supplies storageClass: longhorn-cnpg.
+    size: 10Gi
+  # If enabled, walStorage also defaults to longhorn-cnpg.
+  # walStorage:
+  #   size: 2Gi

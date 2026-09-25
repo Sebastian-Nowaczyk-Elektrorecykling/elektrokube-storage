@@ -1,0 +1,81 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: garage
+  namespace: garage
+spec:
+  releaseName: garage
+  interval: 10m
+  timeout: 15m
+  chart:
+    spec:
+      chart: ./script/helm/garage
+      reconcileStrategy: Revision
+      sourceRef:
+        kind: GitRepository
+        name: storage-garage-chart
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  driftDetection:
+    mode: enabled
+  values:
+    fullnameOverride: garage
+    garage:
+      # Initializes the layout automatically; no bootstrap job or manual join.
+      singleNode: true
+      replicationFactor: "1"
+      dbEngine: sqlite
+      # The chart generates a random RPC Secret and reuses it on upgrades.
+      s3:
+        api:
+          region: garage
+          rootDomain: .garage.garage.svc.cluster.local
+    image:
+      # Upstream multi-architecture image (amd64 and arm64).
+      repository: dxflrs/garage
+      tag: v2.4.1
+    initImage:
+      repository: busybox
+      tag: 1.37.0
+    deployment:
+      kind: StatefulSet
+      replicaCount: 1
+    persistence:
+      enabled: true
+      meta:
+        storageClass: longhorn-garage
+        size: 1Gi
+      data:
+        storageClass: longhorn-garage
+        size: 20Gi
+    service:
+      type: ClusterIP
+    ingress:
+      s3:
+        api:
+          enabled: false
+        web:
+          enabled: false
+    readinessProbe:
+      httpGet:
+        path: /health
+        port: admin
+      initialDelaySeconds: 10
+      periodSeconds: 10
+    livenessProbe:
+      tcpSocket:
+        port: admin
+      initialDelaySeconds: 60
+      periodSeconds: 20
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        memory: 1Gi
+
