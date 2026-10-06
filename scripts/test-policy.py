@@ -4,6 +4,7 @@ import copy
 import json
 from pathlib import Path
 import subprocess
+import sys
 import time
 
 import yaml
@@ -14,7 +15,11 @@ NAMESPACE = "storage-policy-test"
 
 def kube(*args, obj=None):
     result = subprocess.run(["kubectl", *args], input=json.dumps(obj) if obj is not None else None,
-                            text=True, capture_output=True, check=True)
+                            text=True, capture_output=True)
+    if result.returncode:
+        # Preserve API-server diagnostics in CI instead of only a Python traceback.
+        print(result.stderr, file=sys.stderr, end="")
+        result.check_returncode()
     return result.stdout
 
 
@@ -41,10 +46,18 @@ def main():
     kube("wait", "--for=condition=Established", "crd/clusters.postgresql.cnpg.io", "--timeout=60s")
     kube("create", "namespace", NAMESPACE)
     kube("apply", "-k", str(ROOT / "infrastructure/cnpg-policy"))
-    # Admission configuration is observed asynchronously by the API server.
+    # CRD discovery and admission configuration are observed asynchronously.
     for attempt in range(30):
-        if admit(cluster("probe"))["storage"].get("storageClass") == "longhorn-cnpg":
-            break
+        try:
+            if admit(cluster("probe"))["storage"].get("storageClass") == "longhorn-cnpg":
+                break
+        except subprocess.CalledProcessError as error:
+            # Established does not guarantee the admission schema cache is ready.
+            # Only retry this observed startup race, never a policy rejection.
+            message = error.stderr or ""
+            if not ("Error from server (ServiceUnavailable)" in message and
+                    "Resource kind postgresql.cnpg.io/v1, Kind=Cluster not found." in message):
+                raise
         time.sleep(1)
     else:
         raise AssertionError("Policy never began defaulting requests")

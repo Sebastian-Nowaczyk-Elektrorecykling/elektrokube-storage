@@ -1,5 +1,9 @@
 # Elektrokube storage
 
+See the [2026-10-06 upgrade audit](docs/audit-2026-10-06.md) before merging the
+Longhorn/CNPG updates into an automatically reconciled branch.
+
+
 FluxCD configuration for Longhorn, CloudNativePG and Garage on Elektrokube.
 Based on [k8s-addon-storage](https://github.com/Sebastian-Nowaczyk-Elektrorecykling/k8s-addon-storage/tree/f11ddf0910058ff7c336e52fabb18ea9e838d988),
 with native CNPG StorageClass defaulting. This repository is a second Git source
@@ -7,8 +11,8 @@ beside `elektrokube-cilium-and-flux`; it uses the existing Flux controllers.
 
 | Component | Pinned version | Configuration |
 | --- | --- | --- |
-| Longhorn | chart/application `1.12.1` | V1 engine, `/var/lib/longhorn`, one replica by default |
-| CloudNativePG | chart `0.29.0`, operator `1.30.0` | Cluster-wide operator in `cnpg-system` |
+| Longhorn | chart/application `1.13.0` | V1 engine, `/var/lib/longhorn`, one replica by default |
+| CloudNativePG | chart `0.29.1`, operator `1.30.1` | Cluster-wide operator in `cnpg-system` |
 | Garage | chart `0.10.2`, application `2.4.1` | Single node, automatic layout, SQLite, persistent storage |
 
 Garage's official chart is pinned to Git commit
@@ -40,7 +44,7 @@ Prerequisites:
 
 - Kubernetes **1.36+**, with `admissionregistration.k8s.io/v1` serving
   `MutatingAdmissionPolicy` and `MutatingAdmissionPolicyBinding`. Elektrokube
-  currently pins k3s `v1.36.4+k3s1`. The script checks API discovery before writes.
+  currently pins k3s `v1.36.5+k3s1`. The script checks API discovery before writes.
 - Existing Flux with source, Kustomize and Helm controllers; the base `cilium`
   Kustomization must be ready.
 - At least one schedulable worker/hybrid prepared by `prepare-node.sh`, with
@@ -149,4 +153,4 @@ requires the prepared Elektrokube nodes.
 
 References: [Flux Kustomizations](https://fluxcd.io/flux/components/kustomize/kustomizations/),
 [native mutation policies](https://kubernetes.io/docs/reference/access-authn-authz/mutating-admission-policy/),
-[CNPG storage](https://github.com/cloudnative-pg/cloudnative-pg/blob/v1.30.0/docs/src/storage.md).
+[CNPG storage](https://github.com/cloudnative-pg/cloudnative-pg/blob/v1.30.1/docs/src/storage.md).

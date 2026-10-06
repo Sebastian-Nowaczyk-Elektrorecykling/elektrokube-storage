@@ -21,7 +21,7 @@ CHARTS = CACHE / "charts"
 RENDERED = CACHE / "rendered"
 SCHEMAS = CACHE / "schemas"
 KUBE_VERSION = "1.36.4"
-FLUX_VERSION = "v2.9.5"
+FLUX_VERSION = "v2.9.6"
 
 
 def require(condition, message):
@@ -92,6 +92,12 @@ def invariants(resources, rendered):
     releases = {d["metadata"]["name"]: d for d in resources if d["kind"] == "HelmRelease"}
     require(set(releases) == {"longhorn", "cloudnative-pg", "garage"},
             "Missing or extra Helm releases")
+    for name, release in releases.items():
+        for action in ("install", "upgrade"):
+            policy = release["spec"][action]
+            require(policy.get("strategy", {}).get("name") == "RetryOnFailure" and
+                    "remediation" not in policy,
+                    f"{name}: retry in place instead of uninstalling/rolling back stateful infrastructure")
     lh = releases["longhorn"]["spec"]["values"]
     require(lh["persistence"]["createStorageClass"] is False, "Longhorn chart must not own classes")
     require(lh["defaultSettings"]["defaultReplicaCount"] == 1, "Wrong global replica default")
@@ -267,4 +273,3 @@ def main():
 if __name__ == "__main__":
     os.chdir(ROOT)
     main()
-
