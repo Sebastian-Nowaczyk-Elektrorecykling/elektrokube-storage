@@ -46,10 +46,18 @@ def main():
     kube("wait", "--for=condition=Established", "crd/clusters.postgresql.cnpg.io", "--timeout=60s")
     kube("create", "namespace", NAMESPACE)
     kube("apply", "-k", str(ROOT / "infrastructure/cnpg-policy"))
-    # Admission configuration is observed asynchronously by the API server.
+    # CRD discovery and admission configuration are observed asynchronously.
     for attempt in range(30):
-        if admit(cluster("probe"))["storage"].get("storageClass") == "longhorn-cnpg":
-            break
+        try:
+            if admit(cluster("probe"))["storage"].get("storageClass") == "longhorn-cnpg":
+                break
+        except subprocess.CalledProcessError as error:
+            # Established does not guarantee the admission schema cache is ready.
+            # Only retry this observed startup race, never a policy rejection.
+            message = error.stderr or ""
+            if not ("Error from server (ServiceUnavailable)" in message and
+                    "Resource kind postgresql.cnpg.io/v1, Kind=Cluster not found." in message):
+                raise
         time.sleep(1)
     else:
         raise AssertionError("Policy never began defaulting requests")
