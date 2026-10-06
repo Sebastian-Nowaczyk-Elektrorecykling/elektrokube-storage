@@ -4,6 +4,7 @@ import copy
 import json
 from pathlib import Path
 import subprocess
+import sys
 import time
 
 import yaml
@@ -14,7 +15,11 @@ NAMESPACE = "storage-policy-test"
 
 def kube(*args, obj=None):
     result = subprocess.run(["kubectl", *args], input=json.dumps(obj) if obj is not None else None,
-                            text=True, capture_output=True, check=True)
+                            text=True, capture_output=True)
+    if result.returncode:
+        # Preserve API-server diagnostics in CI instead of only a Python traceback.
+        print(result.stderr, file=sys.stderr, end="")
+        result.check_returncode()
     return result.stdout
 
 
