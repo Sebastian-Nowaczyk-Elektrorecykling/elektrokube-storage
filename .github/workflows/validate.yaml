@@ -11,8 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
           cache: pip
@@ -25,14 +27,14 @@ jobs:
           set -euo pipefail
           mkdir -p .cache/bin
           cd .cache/bin
-          curl -fsSL --retry 3 https://get.helm.sh/helm-v3.19.0-linux-amd64.tar.gz -o helm.tgz
-          echo 'a7f81ce08007091b86d8bd696eb4d86b8d0f2e1b9f6c714be62f82f96a594496  helm.tgz' | sha256sum -c -
+          curl -fsSL --retry 3 https://get.helm.sh/helm-v4.3.0-linux-amd64.tar.gz -o helm.tgz
+          echo '86584a54def73570558f66f5111cc53dfed56689637ae32c1201205d494f54fb  helm.tgz' | sha256sum -c -
           tar -xzf helm.tgz --strip-components=1 linux-amd64/helm
-          curl -fsSL --retry 3 https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.7.1/kustomize_v5.7.1_linux_amd64.tar.gz -o kustomize.tgz
-          echo 'ea375e7372f9aa029129d4b2d16c66b7750b7f1213c4f66f910d981c895818d8  kustomize.tgz' | sha256sum -c -
+          curl -fsSL --retry 3 https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.8.2/kustomize_v5.8.2_linux_amd64.tar.gz -o kustomize.tgz
+          echo '06af0a202c2b831207d0173f9c9cdb1b30abceca0747cb3fbb72792d26055c95  kustomize.tgz' | sha256sum -c -
           tar -xzf kustomize.tgz kustomize
-          curl -fsSL --retry 3 https://github.com/yannh/kubeconform/releases/download/v0.7.0/kubeconform-linux-amd64.tar.gz -o kubeconform.tgz
-          echo 'c31518ddd122663b3f3aa874cfe8178cb0988de944f29c74a0b9260920d115d3  kubeconform.tgz' | sha256sum -c -
+          curl -fsSL --retry 3 https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz -o kubeconform.tgz
+          echo '9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883  kubeconform.tgz' | sha256sum -c -
           tar -xzf kubeconform.tgz kubeconform
           echo "$PWD" >> "$GITHUB_PATH"
       - name: Render and validate
